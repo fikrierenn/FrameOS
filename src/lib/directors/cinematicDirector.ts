@@ -6,6 +6,8 @@
 import OpenAI from 'openai';
 import https from 'https';
 import fs from 'fs';
+import { logger } from '@/lib/logger';
+import { calculateCost, formatCost } from '@/lib/utils/costTracking';
 
 // SSL bypass - ONLY for development
 const httpsAgent = process.env.NODE_ENV === 'development' 
@@ -66,10 +68,17 @@ export async function analyzeCinematic(
   framePaths: string[],
   transcription?: any
 ): Promise<CinematicAnalysis> {
-  console.log('🎥 [1/6] Cinematic Director: Görsel analiz başlıyor...');
-  console.log(`📸 ${framePaths.length} frame analiz edilecek`);
-  console.log(`🎬 Model: gpt-4o`);
-  console.log(`🔧 SSL Bypass: Enabled`);
+  const startTime = performance.now();
+  const log = logger.child({
+    function: 'analyzeCinematic',
+    frameCount: framePaths.length,
+    model: 'gpt-4o',
+  });
+
+  log.info('Starting cinematic analysis', {
+    frameCount: framePaths.length,
+    hasTranscription: !!transcription,
+  });
 
   // Sample frames (max 5 for cost optimization)
   console.log('📊 [2/6] Frame sampling başlıyor...');
@@ -176,9 +185,10 @@ FORMAT (JSON):
 Sadece JSON döndür.`;
 
   try {
-    console.log('🚀 [4/6] GPT-4o Vision API çağrılıyor...');
-    console.log(`📝 Prompt length: ${prompt.length} characters`);
-    console.log(`🖼️ Frame count: ${frameImages.length}`);
+    log.info('Calling GPT-4o Vision API', {
+      promptLength: prompt.length,
+      frameCount: frameImages.length,
+    });
     
     const response = await openai.chat.completions.create({
       model: 'gpt-4o', // GPT-4 Omni - vision capabilities included
@@ -198,85 +208,68 @@ Sadece JSON döndür.`;
       temperature: 0.7,
     });
 
-    console.log('✅ [5/6] GPT-4o response alındı!');
-    console.log(`📊 Response status: ${response.choices[0]?.finish_reason}`);
-    console.log(`🔢 Response ID: ${response.id}`);
-    console.log(`⏱️ Model: ${response.model}`);
+    const duration = performance.now() - startTime;
+    const tokens = response.usage?.total_tokens || 0;
+    const cost = calculateCost('gpt-4o', tokens);
+
+    log.info('GPT-4o Vision response received', {
+      duration: `${duration.toFixed(2)}ms`,
+      tokens,
+      cost: formatCost(cost.estimatedCost),
+      finishReason: response.choices[0]?.finish_reason,
+      responseId: response.id,
+    });
     
     const rawContent = response.choices[0]?.message?.content;
-    console.log(`📄 Raw response length: ${rawContent?.length || 0} characters`);
-    console.log(`📝 Raw response preview: ${rawContent?.substring(0, 200)}...`);
-
-    console.log('🔍 [6/6] JSON parsing başlıyor...');
+    log.debug('Parsing response', {
+      rawLength: rawContent?.length || 0,
+      preview: rawContent?.substring(0, 200),
+    });
     
     // Clean markdown code blocks (```json ... ```)
     let cleanedContent = rawContent || '{}';
     if (cleanedContent.includes('```')) {
-      console.log('🧹 Markdown code block tespit edildi, temizleniyor...');
+      log.debug('Cleaning markdown code blocks');
       cleanedContent = cleanedContent
         .replace(/```json\s*/g, '')
         .replace(/```\s*/g, '')
         .trim();
-      console.log(`✅ Temizlendi. Yeni uzunluk: ${cleanedContent.length} characters`);
     }
     
-    let result;
+    let result: CinematicAnalysis;
     try {
       result = JSON.parse(cleanedContent);
-      console.log('✅ JSON parsing başarılı!');
-      console.log(`🎯 Parsed keys: ${Object.keys(result).join(', ')}`);
+      log.debug('JSON parsing successful', {
+        keys: Object.keys(result).join(', '),
+      });
     } catch (parseError: any) {
-      console.error('❌ JSON parsing FAILED!');
-      console.error('📝 Parse Error:', parseError.message);
-      console.error('📄 Attempted to parse:', cleanedContent.substring(0, 500));
+      log.error('JSON parsing failed', parseError, {
+        rawContent: cleanedContent.substring(0, 500),
+      });
       throw new Error(`JSON parsing failed: ${parseError.message}`);
     }
     
-    console.log('✅ Cinematic analysis complete');
-    console.log(`🎥 Camera type: ${result.camera_analysis?.type}`);
-    console.log(`🚁 Drone detected: ${result.camera_analysis?.drone_detected}`);
-    console.log(`💡 Lighting: ${result.lighting_analysis?.quality}`);
-    console.log(`📊 Overall score: ${result.overall_score}/100`);
+    log.info('Cinematic analysis completed', {
+      overallScore: result.overall_score,
+      cameraType: result.camera_analysis?.type,
+      droneDetected: result.camera_analysis?.drone_detected,
+      lightingQuality: result.lighting_analysis?.quality,
+    });
 
     return result;
   } catch (error: any) {
-    console.error('❌ ============================================');
-    console.error('❌ CINEMATIC ANALYSIS ERROR - DETAILED DEBUG');
-    console.error('❌ ============================================');
-    console.error('🔍 Error Type:', error?.constructor?.name || 'Unknown');
-    console.error('📝 Error Message:', error?.message || 'No message');
+    const duration = performance.now() - startTime;
     
-    // OpenAI API specific errors
-    if (error?.status) {
-      console.error('🌐 HTTP Status:', error.status);
-    }
-    if (error?.code) {
-      console.error('🔑 Error Code:', error.code);
-    }
-    if (error?.type) {
-      console.error('🏷️ Error Type:', error.type);
-    }
-    if (error?.error) {
-      console.error('🚨 API Error Details:', JSON.stringify(error.error, null, 2));
-    }
+    log.error('Cinematic analysis failed', error, {
+      duration: `${duration.toFixed(2)}ms`,
+      errorType: error?.constructor?.name,
+      errorCode: error?.code,
+      errorStatus: error?.status,
+      frameCount: framePaths.length,
+      sampledFrames: sampleFrames.length,
+    });
     
-    // Stack trace (first 3 lines)
-    if (error?.stack) {
-      const stackLines = error.stack.split('\n').slice(0, 3);
-      console.error('📚 Stack Trace (top 3):');
-      stackLines.forEach((line: string) => console.error('  ', line));
-    }
-    
-    // Additional context
-    console.error('📊 Context:');
-    console.error('  - Frame count:', framePaths.length);
-    console.error('  - Sampled frames:', sampleFrames.length);
-    console.error('  - Model: gpt-4o');
-    console.error('  - SSL Bypass: Enabled');
-    
-    console.error('❌ ============================================');
-    
-    // Throw user-friendly error with details
+    // Throw user-friendly error
     const errorMessage = error?.message || 'Unknown error';
     const errorCode = error?.code || error?.status || 'UNKNOWN';
     throw new Error(`Görsel analiz başarısız oldu [${errorCode}]: ${errorMessage}`);
