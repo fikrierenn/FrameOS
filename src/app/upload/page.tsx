@@ -12,7 +12,7 @@ export default function UploadPage() {
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  const MAX_SIZE_MB = 200;
+  const MAX_SIZE_MB = 100;
   const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {

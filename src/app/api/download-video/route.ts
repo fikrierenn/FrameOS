@@ -4,6 +4,8 @@ import path from 'path';
 import fs from 'fs';
 
 export async function POST(request: NextRequest) {
+  let outputPath: string | null = null;
+
   try {
     const { url } = await request.json();
 
@@ -27,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     // Unique filename
     const timestamp = Date.now();
-    const outputPath = path.join(tempDir, `video-${timestamp}.mp4`);
+    outputPath = path.join(tempDir, `video-${timestamp}.mp4`);
     console.log('📝 Output path:', outputPath);
 
     // yt-dlp ile video indir
@@ -46,9 +48,6 @@ export async function POST(request: NextRequest) {
     const videoBuffer = fs.readFileSync(outputPath);
     const videoBase64 = videoBuffer.toString('base64');
 
-    // Temp dosyayı sil
-    fs.unlinkSync(outputPath);
-
     return NextResponse.json({
       success: true,
       video: videoBase64,
@@ -63,5 +62,15 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+  } finally {
+    // Cleanup - ALWAYS runs
+    if (outputPath && fs.existsSync(outputPath)) {
+      try {
+        fs.unlinkSync(outputPath);
+        console.log('✅ Temp file deleted:', outputPath);
+      } catch (cleanupError) {
+        console.warn('⚠️ Cleanup error:', cleanupError);
+      }
+    }
   }
 }

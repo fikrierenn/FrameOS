@@ -81,18 +81,6 @@ export async function POST(request: NextRequest) {
     );
     console.log(`✅ Cinematic analysis done: ${cinematicAnalysis.overall_score}/100`);
 
-    // Cleanup
-    console.log('🗑️ Cleaning up temporary files...');
-    if (tempVideoPath && fs.existsSync(tempVideoPath)) {
-      fs.unlinkSync(tempVideoPath);
-    }
-    if (audioPath && fs.existsSync(audioPath)) {
-      fs.unlinkSync(audioPath);
-    }
-    if (framesDir && fs.existsSync(framesDir)) {
-      fs.rmSync(framesDir, { recursive: true, force: true });
-    }
-
     console.log('✅ Full analysis completed successfully!');
 
     return NextResponse.json({
@@ -104,21 +92,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error('❌ Full analysis error:', error);
-
-    // Cleanup on error
-    try {
-      if (tempVideoPath && fs.existsSync(tempVideoPath)) {
-        fs.unlinkSync(tempVideoPath);
-      }
-      if (audioPath && fs.existsSync(audioPath)) {
-        fs.unlinkSync(audioPath);
-      }
-      if (framesDir && fs.existsSync(framesDir)) {
-        fs.rmSync(framesDir, { recursive: true, force: true });
-      }
-    } catch (cleanupError) {
-      console.warn('⚠️ Cleanup error:', cleanupError);
-    }
     
     return NextResponse.json(
       { 
@@ -126,6 +99,25 @@ export async function POST(request: NextRequest) {
       },
       { status: 500 }
     );
+  } finally {
+    // Cleanup - ALWAYS runs (success or error)
+    console.log('🗑️ Cleaning up temporary files...');
+    try {
+      if (tempVideoPath && fs.existsSync(tempVideoPath)) {
+        fs.unlinkSync(tempVideoPath);
+        console.log('✅ Deleted:', tempVideoPath);
+      }
+      if (audioPath && fs.existsSync(audioPath)) {
+        fs.unlinkSync(audioPath);
+        console.log('✅ Deleted:', audioPath);
+      }
+      if (framesDir && fs.existsSync(framesDir)) {
+        fs.rmSync(framesDir, { recursive: true, force: true });
+        console.log('✅ Deleted:', framesDir);
+      }
+    } catch (cleanupError) {
+      console.warn('⚠️ Cleanup error:', cleanupError);
+    }
   }
 }
 

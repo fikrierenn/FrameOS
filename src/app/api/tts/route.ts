@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import https from 'https';
 
-// SSL bypass for development
-const httpsAgent = new https.Agent({
-  rejectUnauthorized: false,
-});
+// SSL bypass - ONLY for development
+const httpsAgent = process.env.NODE_ENV === 'development' 
+  ? new https.Agent({ rejectUnauthorized: false })
+  : undefined;
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
-  httpAgent: httpsAgent,
+  ...(httpsAgent && { httpAgent: httpsAgent }),
 });
 
 export async function POST(request: NextRequest) {
