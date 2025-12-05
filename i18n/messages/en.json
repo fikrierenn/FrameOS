@@ -1,0 +1,41 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password"
+  },
+  "dashboard": {
+    "title": "My Videos",
+    "uploadNew": "Upload New Video",
+    "noVideos": "You haven't uploaded any videos yet"
+  },
+  "upload": {
+    "title": "Upload Video",
+    "selectFile": "Select File",
+    "maxSize": "Maximum file size: {size}MB",
+    "uploading": "Uploading...",
+    "success": "Video uploaded successfully"
+  },
+  "video": {
+    "status": {
+      "uploaded": "Uploaded",
+      "processing": "Processing",
+      "ready": "Ready",
+      "error": "Error"
+    },
+    "transcription": "Transcription",
+    "noTranscription": "Transcription not ready yet"
+  },
+  "errors": {
+    "fileTooLarge": "File too large. Maximum {size}MB allowed",
+    "uploadFailed": "Upload failed",
+    "transcriptionFailed": "Transcription failed",
+    "unauthorized": "You need to login"
+  }
+}

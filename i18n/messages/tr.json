@@ -1,0 +1,41 @@
+{
+  "common": {
+    "loading": "Yükleniyor...",
+    "error": "Hata",
+    "success": "Başarılı"
+  },
+  "auth": {
+    "login": "Giriş Yap",
+    "logout": "Çıkış Yap",
+    "email": "E-posta",
+    "password": "Şifre"
+  },
+  "dashboard": {
+    "title": "Videolarım",
+    "uploadNew": "Yeni Video Yükle",
+    "noVideos": "Henüz video yüklemediniz"
+  },
+  "upload": {
+    "title": "Video Yükle",
+    "selectFile": "Dosya Seç",
+    "maxSize": "Maksimum dosya boyutu: {size}MB",
+    "uploading": "Yükleniyor...",
+    "success": "Video başarıyla yüklendi"
+  },
+  "video": {
+    "status": {
+      "uploaded": "Yüklendi",
+      "processing": "İşleniyor",
+      "ready": "Hazır",
+      "error": "Hata"
+    },
+    "transcription": "Transkript",
+    "noTranscription": "Transkript henüz hazır değil"
+  },
+  "errors": {
+    "fileTooLarge": "Dosya çok büyük. Maksimum {size}MB olmalıdır",
+    "uploadFailed": "Yükleme başarısız oldu",
+    "transcriptionFailed": "Transkripsiyon başarısız oldu",
+    "unauthorized": "Oturum açmanız gerekiyor"
+  }
+}
